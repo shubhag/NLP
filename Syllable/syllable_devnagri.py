@@ -192,9 +192,6 @@ def break_syllables_word(word, syllables):
 					else:
 						word_list[j].change_sound('F')
 				j = j + 1
-		# for shabad in word_list:
-		# 	print shabad.name + '\t' + str(shabad.sound)
-		# print '\n'
 
 	j = 0
 	curr_syllable = word_list[0].return_name()
@@ -223,6 +220,17 @@ def break_syllables_word(word, syllables):
 		j += 1 
 	syllables.append(curr_syllable)
 
+def create_sorted_tuple(dictionary):
+	dictCount = dict()
+	for item in dictionary:
+		dictCount[item] = dictCount.get(item,0) + 1
+	
+	tuple_array = []
+	for k,v in dictCount.items():
+		tuple_array.append((v, k))
+	tuple_array = sorted(tuple_array, reverse=True)
+	return tuple_array
+
 def plot_figure(plotWords, plotFrequency, figname):
 	fig = pylab.figure()
 	indexes = np.arange(len(plotWords))
@@ -237,7 +245,7 @@ def plot_figure(plotWords, plotFrequency, figname):
 if __name__ == '__main__':
 	f = open('corpus.txt', 'r')
 	wr = codecs.open('devnagri.txt', 'w', 'utf-8')
-
+	wrbigram = codecs.open('devnagri_bigram.txt', 'w', 'utf-8')
 	devnagri_chars = consonants + full_vowels + matras + [halant]
 	words = []
 	for line in f:
@@ -255,27 +263,36 @@ if __name__ == '__main__':
 
 	syllables = []	
 	for word in words:
-		break_syllables_word(word, syllables)
+		break_syllables_word(word,syllables)
 
-	dictCount = dict()
-	for syllable in syllables:
-		dictCount[syllable] = dictCount.get(syllable,0) + 1
-
-	copy = []
-	for k,v in dictCount.items():
-		copy.append((v, k))
-	copy = sorted(copy, reverse=True)
+	syllable_tuple = create_sorted_tuple(syllables)
 
 	plotWords = []
 	plotFrequency = []
 	i=0
-	for k in copy:
+	for k in syllable_tuple:
 		if i < 1000:
 			plotWords.append(k[1])
 			plotFrequency.append(math.log(k[0]))
+			i = i + 1
 		wr.write('%s\t%d\n' %(k[1], k[0]))
-	
+	wr.close()
+
+	bigramsyllables = []
+	i = 0;
+	while i < len(syllables) - 1:
+		word = syllables[i] + syllables[i+1]
+		bigramsyllables.append(word)
+		i = i + 1
+
+	bigrams_tuple = create_sorted_tuple(bigramsyllables)
+	i = 0 
+	for bigram in bigrams_tuple:
+		if i < 1000:
+			wrbigram.write('%s\t%d\n' %(bigram[1], bigram[0]))
+			i = i+1
+	wrbigram.close()
+
 	plot_figure(plotWords, plotFrequency, "devnagri.jpg")
 
 	f.close()
-	wr.close()

@@ -6,6 +6,31 @@ import matplotlib.pyplot as plt
 import pylab
 import sys
 import codecs
+
+def create_sorted_tuple(dictionary):
+	dictCount = dict()
+	for item in dictionary:
+		dictCount[item] = dictCount.get(item,0) + 1
+	
+	tuple_array = []
+	for k,v in dictCount.items():
+		tuple_array.append((v, k))
+	tuple_array = sorted(tuple_array, reverse=True)
+	return tuple_array
+
+
+def plot_figure(plotWords, plotFrequency, figname):
+	fig = pylab.figure()
+	indexes = np.arange(len(plotWords))
+	width = 0.5
+	plt.bar(indexes, plotFrequency, width)
+	plt.xticks(indexes + width * 0.5, plotWords)
+	plt.xlabel("Syllable")
+	plt.ylabel("Log of syllable frequency")
+	plt.show()	
+	fig.savefig(figname, transparent=False, bbox_inches='tight', pad_inches=0)
+
+
 if __name__ == '__main__':
 	lang = sys.argv[1]
 	if lang == "-hindi":
@@ -48,6 +73,7 @@ if __name__ == '__main__':
 		f = open('bgita.txt', 'r')
 		wr = codecs.open('latinDevnagSansk.txt', 'w', 'utf-8')
 		dictCount = dict()
+		syllables = []
 		for line in f:
 			decodedLine = line.decode('utf-8')
 			length = len(decodedLine)
@@ -67,33 +93,40 @@ if __name__ == '__main__':
 							syllable += decodedLine[i]
 							i = i +1 
 						if len(syllable):
-							dictCount[syllable] = dictCount.get(syllable,0) + 1	
+							syllables.append(syllable)
+							# dictCount[syllable] = dictCount.get(syllable,0) + 1	
 						syllable = ""
 						i = i-1
 				i = i+1
 			if len(syllable):
-				dictCount[syllable] = dictCount.get(syllable,0) + 1	
-	copy = []
-	for k,v in dictCount.items():
-		copy.append((v, k))
-	copy = sorted(copy, reverse=True)
+				syllables.append(syllable)
+				# dictCount[syllable] = dictCount.get(syllable,0) + 1
 
+	syllable_tuple = create_sorted_tuple(syllables)	
 	plotWords = []
 	plotFrequency = []
 	i=0
-	for k in copy:
+	for k in syllable_tuple:
 		if i < 1000:
 			plotWords.append(k[1])
 			plotFrequency.append(math.log(k[0]))
 		wr.write('%s\t%d\n' %(k[1], k[0]))
 	f.close()
 	wr.close()
-	fig = pylab.figure()
-	indexes = np.arange(len(plotWords))
-	width = 0.5
-	plt.bar(indexes, plotFrequency, width)
-	plt.xticks(indexes + width * 0.5, plotWords)
-	plt.xlabel("Syllable")
-	plt.ylabel("Log of syllable frequency")
-	plt.show()	
-	fig.savefig('latinDevnagSansk.png', transparent=False, bbox_inches='tight', pad_inches=0)
+	plot_figure(plotWords, plotFrequency, "latinDevnagSansk.png")
+
+	bigramsyllables = []
+	i = 0;
+	while i < len(syllables) - 1:
+		word = syllables[i] + syllables[i+1]
+		bigramsyllables.append(word)
+		i = i + 1
+
+	bigrams_tuple = create_sorted_tuple(bigramsyllables)
+	i = 0 
+	wrbigram = codecs.open('latinDevnagSansk_bigram.txt', 'w', 'utf-8')
+	for bigram in bigrams_tuple:
+		if i < 1000:
+			wrbigram.write('%s\t%d\n' %(bigram[1], bigram[0]))
+			i = i+1
+	wrbigram.close()
